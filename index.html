@@ -498,9 +498,49 @@
         </div>
     </div>
 
+    <!-- Modal for Cashing Out Funds -->
+    <div id="cash-out-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-[#111827] border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i class="fa-solid fa-hand-holding-dollar text-emerald-400 mr-2"></i> Cash Out Bank Funds
+                </h3>
+                <button onclick="toggleCashOutModal(false)" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 flex items-center">
+                    <i class="fa-solid fa-vault text-emerald-400 mr-2"></i> Available to Cash Out
+                </span>
+                <span id="cash-out-available-balance" class="text-base font-black text-emerald-400 tracking-tight">$0.00</span>
+            </div>
+
+            <form id="cash-out-form" onsubmit="handleCashOut(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Amount to Cash Out ($)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-slate-400 text-sm font-bold">$</span>
+                        <input type="number" id="cash-out-amount-input" step="0.01" min="0.01" required placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Redemption Reason / Note (Optional)</label>
+                    <input type="text" id="cash-out-note-input" placeholder="e.g. Coffee treat, Bought a book" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-3 border-t border-slate-800">
+                    <button type="button" onclick="toggleCashOutModal(false)" class="px-4 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-700">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-sm hover:bg-emerald-400">Confirm Cash Out</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Application Logic -->
     <script>
-        // Central Application State
         let appState = {
             vaultBalance: 0.00,
             tasks: [],
@@ -520,7 +560,6 @@
         let monthlyChartInstance = null;
         let poopChartInstance = null;
 
-        // --- Utility Helpers ---
         function isSameDay(d1, d2) {
             if (!d1 || !d2) return false;
             const date1 = new Date(d1);
@@ -562,7 +601,6 @@
 
         function saveStorage() {
             localStorage.setItem('sarahs_tracker_data', JSON.stringify(appState));
-            // Trigger automatic background webhook sync if configured
             triggerWebhookSync();
         }
 
@@ -608,7 +646,6 @@
             return map[timing] || '🕒';
         }
 
-        // --- Navigation ---
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(el => {
@@ -640,7 +677,6 @@
             }
         };
 
-        // --- Task Filters ---
         window.filterRoutineCategory = function(cat) {
             currentCategoryFilter = cat;
             document.querySelectorAll('.cat-filter-btn').forEach(btn => {
@@ -671,7 +707,6 @@
             window.renderRoutines();
         };
 
-        // --- Task Modal & CRUD ---
         window.toggleNewTaskModal = function(show) {
             const modal = document.getElementById('new-task-modal');
             if (modal) modal.classList.toggle('hidden', !show);
@@ -737,6 +772,209 @@
             }
         };
 
+        window.handleSaveTask = function(e) {
+            e.preventDefault();
+            const editingId = document.getElementById('editing-task-id').value;
+            const title = document.getElementById('task-title-input').value;
+            const category = document.getElementById('task-category-input').value;
+            const frequency = document.getElementById('task-frequency-input').value;
+            const timing = document.getElementById('task-timing-input').value;
+            const reward = parseFloat(document.getElementById('task-reward-input').value) || 0;
+
+            const subtaskInputs = document.querySelectorAll('.subtask-title-input');
+            const subtasks = [];
+            subtaskInputs.forEach((input, index) => {
+                const val = input.value.trim();
+                if (val) {
+                    subtasks.push({
+                        id: 'sub-' + Date.now() + '-' + index,
+                        title: val,
+                        completed: false
+                    });
+                }
+            });
+
+            if (editingId) {
+                const task = appState.tasks.find(t => t.id === editingId);
+                if (task) {
+                    task.title = title;
+                    task.category = category;
+                    task.frequency = frequency;
+                    task.timing = timing;
+                    task.reward = reward;
+                    const oldSubMap = new Map((task.subtasks || []).map(s => [s.title, s.completed]));
+                    task.subtasks = subtasks.map(st => ({
+                        ...st,
+                        completed: oldSubMap.has(st.title) ? oldSubMap.get(st.title) : false
+                    }));
+                    showToast('Task Updated!');
+                }
+            } else {
+                const newTask = {
+                    id: Date.now().toString(),
+                    title,
+                    category,
+                    frequency,
+                    timing,
+                    reward,
+                    completed: false,
+                    lastCompleted: null,
+                    subtasks
+                };
+                appState.tasks.push(newTask);
+                showToast('New Task Added!');
+            }
+
+            saveStorage();
+            window.renderAll();
+            window.toggleNewTaskModal(false);
+            document.getElementById('add-task-form').reset();
+        };
+
+        window.toggleTaskCompletion = function(taskId) {
+            const task = appState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const now = new Date();
+            const isCurrentlyDone = task.completed || isSameDay(task.lastCompleted, now);
+
+            if (!isCurrentlyDone) {
+                task.completed = true;
+                task.lastCompleted = now.toISOString();
+                if (task.subtasks) {
+                    task.subtasks.forEach(st => st.completed = true);
+                }
+
+                appState.vaultBalance += task.reward;
+                appState.history.unshift({
+                    id: Date.now().toString(),
+                    taskId: task.id,
+                    title: task.title,
+                    category: task.category,
+                    reward: task.reward,
+                    timestamp: now.toISOString()
+                });
+
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                }
+                showToast(`Completed! Earned $${task.reward.toFixed(2)}`);
+            } else {
+                task.completed = false;
+                task.lastCompleted = null;
+                if (task.subtasks) {
+                    task.subtasks.forEach(st => st.completed = false);
+                }
+
+                appState.vaultBalance = Math.max(0, appState.vaultBalance - task.reward);
+
+                const histIdx = appState.history.findIndex(h => h.taskId === task.id && isSameDay(h.timestamp, now));
+                if (histIdx !== -1) {
+                    appState.history.splice(histIdx, 1);
+                }
+
+                showToast(`Task unmarked! $${task.reward.toFixed(2)} deducted from bank`);
+            }
+
+            saveStorage();
+            window.renderAll();
+        };
+
+        window.toggleSubtaskCompletion = function(taskId, subtaskId, e) {
+            if (e) e.stopPropagation();
+            const task = appState.tasks.find(t => t.id === taskId);
+            if (!task || !task.subtasks) return;
+
+            const subtask = task.subtasks.find(st => st.id === subtaskId);
+            if (!subtask) return;
+
+            const now = new Date();
+            const isMainDone = task.completed || isSameDay(task.lastCompleted, now);
+
+            subtask.completed = !subtask.completed;
+            const allSubtasksDone = task.subtasks.every(st => st.completed);
+
+            if (allSubtasksDone && !isMainDone) {
+                task.completed = true;
+                task.lastCompleted = now.toISOString();
+                appState.vaultBalance += task.reward;
+                appState.history.unshift({
+                    id: Date.now().toString(),
+                    taskId: task.id,
+                    title: task.title,
+                    category: task.category,
+                    reward: task.reward,
+                    timestamp: now.toISOString()
+                });
+
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                }
+                showToast(`All sub-tasks done! Earned $${task.reward.toFixed(2)}`);
+            } else if (!allSubtasksDone && isMainDone) {
+                task.completed = false;
+                task.lastCompleted = null;
+                appState.vaultBalance = Math.max(0, appState.vaultBalance - task.reward);
+
+                const histIdx = appState.history.findIndex(h => h.taskId === task.id && isSameDay(h.timestamp, now));
+                if (histIdx !== -1) {
+                    appState.history.splice(histIdx, 1);
+                }
+
+                showToast(`Sub-task unchecked! Main task unmarked.`);
+            }
+
+            saveStorage();
+            window.renderAll();
+        };
+
+        window.quickLog = function(type) {
+            const now = new Date().toISOString();
+            if (type === 'poop') {
+                appState.healthLogs.poop.unshift({ id: Date.now().toString(), timestamp: now });
+                showToast('💩 Digestion event logged!');
+            } else if (type === 'water') {
+                appState.healthLogs.water.unshift({ id: Date.now().toString(), amount: 1, timestamp: now });
+                showToast('💧 1 Glass of water logged!');
+            }
+            saveStorage();
+            renderAll();
+        };
+
+        window.deleteTask = function(taskId, e) {
+            if (e) e.stopPropagation();
+            appState.tasks = appState.tasks.filter(t => t.id !== taskId);
+            saveStorage();
+            renderAll();
+            showToast('Task deleted');
+        };
+
+        window.deleteHistoryItem = function(historyId) {
+            const idx = appState.history.findIndex(h => h.id === historyId);
+            if (idx !== -1) {
+                const item = appState.history[idx];
+                if (item.category === 'cashout' || item.reward < 0) {
+                    appState.vaultBalance += Math.abs(item.reward);
+                    showToast(`Cash out refunded +$${Math.abs(item.reward).toFixed(2)} to Bank!`);
+                }
+                appState.history.splice(idx, 1);
+                saveStorage();
+                window.renderAll();
+            }
+        };
+
+        window.toggleCashOutModal = function(show) {
+            const modal = document.getElementById('cash-out-modal');
+            if (modal) {
+                if (show) {
+                    renderBank();
+                    modal.classList.remove('hidden');
+                } else {
+                    modal.classList.add('hidden');
+                }
+            }
+        };
+
         window.handleCashOut = function(e) {
             e.preventDefault();
             const amountInput = document.getElementById('cash-out-amount-input');
@@ -761,24 +999,10 @@
 
             saveStorage();
             window.renderAll();
-            window.toggleCashOutModal(false);
+            toggleCashOutModal(false);
             amountInput.value = '';
             noteInput.value = '';
             showToast(`Cashed out $${amount.toFixed(2)} successfully!`);
-        };
-
-        window.deleteHistoryItem = function(historyId) {
-            const idx = appState.history.findIndex(h => h.id === historyId);
-            if (idx !== -1) {
-                const item = appState.history[idx];
-                if (item.category === 'cashout' || item.reward < 0) {
-                    appState.vaultBalance += Math.abs(item.reward);
-                    showToast(`Cash out refunded +$${Math.abs(item.reward).toFixed(2)} to Bank!`);
-                }
-                appState.history.splice(idx, 1);
-                saveStorage();
-                window.renderAll();
-            }
         };
 
         window.saveSyncUrl = function() {
@@ -834,7 +1058,6 @@
             }
         };
 
-        // --- Render Functions ---
         window.renderDashboard = function() {
             const container = document.getElementById('dash-active-tasks');
             if (!container) return;
@@ -1039,7 +1262,6 @@
         };
 
         window.renderAnalytics = function() {
-            // 7-Day Trend
             const last7Days = [];
             const completionData = [];
             for (let i = 6; i >= 0; i--) {
@@ -1070,7 +1292,6 @@
                 });
             }
 
-            // Monthly Breakdown
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth();
@@ -1131,7 +1352,6 @@
                 });
             }
 
-            // 6-Week Poop Trend
             const poopWeekLabels = [], poopWeekCounts = [];
             for (let i = 5; i >= 0; i--) {
                 const weekStart = new Date(now);
