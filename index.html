@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarah's Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: '#111827',
+                        borderCol: '#1f2937'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Mobile Top Icon Navigation Bar -->
+    <div id="mobile-top-nav" class="md:hidden flex items-center justify-around bg-[#111827] border-b border-slate-800 px-2 py-3 z-40 sticky top-0 shadow-md">
+        <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-btn p-2 rounded-xl text-emerald-400 bg-emerald-500/15 font-bold transition-all">
+            <i class="fa-solid fa-chart-pie text-lg"></i>
+        </button>
+        <button onclick="switchTab('routines')" id="mob-nav-routines" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-list-check text-lg"></i>
+        </button>
+        <button onclick="switchTab('health')" id="mob-nav-health" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-heart-pulse text-lg"></i>
+        </button>
+        <button onclick="switchTab('vault')" id="mob-nav-vault" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-sack-dollar text-lg"></i>
+        </button>
+        <button onclick="switchTab('history')" id="mob-nav-history" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+        </button>
+        <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-chart-line text-lg"></i>
+        </button>
+        <button onclick="switchTab('sync')" id="mob-nav-sync" class="mob-nav-btn p-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+            <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+        </button>
+    </div>
+
+    <div id="app" class="flex flex-col md:flex-row h-screen overflow-hidden">
+        <aside id="sidebar" class="hidden md:flex w-64 bg-[#111827] border-r border-slate-800 flex-col z-30 shrink-0 h-full">
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-bold text-lg">
+                        <span class="text-xl">🐰</span>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base leading-tight tracking-tight text-slate-100">Sarah's Tracker</h1>
+                        <span class="text-xs text-emerald-400 font-medium">Personal Assistant</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all bg-emerald-500/10 text-emerald-400 font-bold">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </button>
+
+                <button onclick="switchTab('routines')" id="nav-routines" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-list-check w-5 text-center"></i>
+                    <span>Tasks</span>
+                </button>
+
+                <button onclick="switchTab('health')" id="nav-health" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-heart-pulse w-5 text-center"></i>
+                    <span>Health</span>
+                </button>
+
+                <button onclick="switchTab('vault')" id="nav-vault" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-sack-dollar w-5 text-center"></i>
+                    <span>Bank & Rewards</span>
+                </button>
+
+                <button onclick="switchTab('history')" id="nav-history" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                    <span>Task History</span>
+                </button>
+
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                    <span>Analytics</span>
+                </button>
+
+                <button onclick="switchTab('sync')" id="nav-sync" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/60 hover:text-slate-200">
+                    <i class="fa-solid fa-cloud-arrow-up w-5 text-center"></i>
+                    <span>Google Sync</span>
+                </button>
+            </nav>
+
+            <!-- Bank Balance Sidebar Card -->
+            <div class="mx-4 mb-3 p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/40 via-emerald-900/20 to-slate-900 border border-emerald-500/20 shadow-inner">
+                <div class="flex items-center justify-between text-xs text-emerald-400 font-medium mb-1">
+                    <span><i class="fa-solid fa-vault mr-1"></i> Bank Balance</span>
+                    <button onclick="toggleCashOutModal(true)" class="text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-bold transition-all">
+                        CASH OUT
+                    </button>
+                </div>
+                <div id="sidebar-vault-balance" class="text-xl font-black text-emerald-400 tracking-tight">$0.00</div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 text-xs text-slate-500 text-center">
+                Sarah's Tracker v2.9
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#090d16]">
+            
+            <section id="tab-dashboard" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-5">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Dashboard</h2>
+                    </div>
+                </header>
+
+                <!-- Quick Bio Log Widget -->
+                <div class="p-2.5 px-3.5 rounded-xl bg-[#111827] border border-slate-800/80 shadow-sm flex items-center justify-between">
+                    <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center">
+                        <i class="fa-solid fa-bolt text-amber-400 mr-1.5 text-xs"></i> Quick Bio Log
+                    </span>
+                    <div class="flex items-center space-x-4 sm:space-x-6">
+                        <button onclick="quickLog('poop')" title="Log Poop" class="w-8 h-8 sm:w-9 sm:h-9 bg-amber-950/30 border border-amber-800/40 hover:bg-amber-900/60 hover:scale-105 hover:border-amber-500/50 active:scale-95 text-sm sm:text-base rounded-lg flex items-center justify-center transition-all">
+                            <span>💩</span>
+                        </button>
+                        <button onclick="quickLog('water')" title="Log Water (1 Glass)" class="w-8 h-8 sm:w-9 sm:h-9 bg-cyan-950/30 border border-cyan-800/40 hover:bg-cyan-900/60 hover:scale-105 hover:border-cyan-500/50 active:scale-95 text-sm sm:text-base rounded-lg flex items-center justify-center transition-all">
+                            <span>💧</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Tasks Overview -->
+                <div class="p-3.5 sm:p-5 rounded-2xl bg-[#111827] border border-slate-800 shadow-lg space-y-3 sm:space-y-4">
+                    <h3 class="text-sm sm:text-base font-bold text-white flex items-center justify-between">
+                        <span><i class="fa-solid fa-fire text-emerald-400 mr-2"></i> Today's Priority Tasks</span>
+                        <button onclick="switchTab('routines')" class="text-xs text-emerald-400 hover:underline">View All</button>
+                    </h3>
+                    <div id="dash-active-tasks" class="space-y-2"></div>
+                </div>
+            </section>
+
+            <section id="tab-routines" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Tasks</h2>
+                        <button onclick="openAddTaskModal()" class="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-[11px] sm:text-xs shadow-sm shadow-emerald-500/20 transition-all flex items-center space-x-1">
+                            <i class="fa-solid fa-plus text-[9px] sm:text-[10px]"></i>
+                            <span>Add New Task</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Filter Controls -->
+                <div class="p-2 sm:p-3 rounded-xl bg-[#111827] border border-slate-800 space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs">
+                    <div class="flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap pb-1 sm:pb-0 scrollbar-none">
+                        <span class="font-semibold text-slate-400 mr-0.5 shrink-0">🏷️</span>
+                        <button onclick="filterRoutineCategory('all')" id="cat-filter-all" class="cat-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-emerald-500 text-slate-950">All</button>
+                        <button onclick="filterRoutineCategory('todo')" id="cat-filter-todo" class="cat-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">To do</button>
+                        <button onclick="filterRoutineCategory('chores')" id="cat-filter-chores" class="cat-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Chore</button>
+                        <button onclick="filterRoutineCategory('workouts')" id="cat-filter-workouts" class="cat-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Exercise</button>
+                        <button onclick="filterRoutineCategory('skincare')" id="cat-filter-skincare" class="cat-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Hygiene</button>
+                    </div>
+
+                    <div class="flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap pt-1 sm:pt-1.5 border-t border-slate-800/80 scrollbar-none">
+                        <span class="font-semibold text-slate-400 mr-0.5 shrink-0">⏰</span>
+                        <button onclick="filterRoutineFrequency('all')" id="freq-filter-all" class="freq-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-teal-500 text-slate-950">All</button>
+                        <button onclick="filterRoutineFrequency('once')" id="freq-filter-once" class="freq-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Once</button>
+                        <button onclick="filterRoutineFrequency('daily')" id="freq-filter-daily" class="freq-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Daily</button>
+                        <button onclick="filterRoutineFrequency('weekly')" id="freq-filter-weekly" class="freq-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Weekly</button>
+                        <button onclick="filterRoutineFrequency('monthly')" id="freq-filter-monthly" class="freq-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Monthly</button>
+                    </div>
+
+                    <div class="flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap pt-1 sm:pt-1.5 border-t border-slate-800/80 scrollbar-none">
+                        <span class="font-semibold text-slate-400 mr-0.5 shrink-0">☀️</span>
+                        <button onclick="filterRoutineTiming('all')" id="timing-filter-all" class="timing-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-sky-500 text-slate-950">All</button>
+                        <button onclick="filterRoutineTiming('AM')" id="timing-filter-AM" class="timing-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">AM</button>
+                        <button onclick="filterRoutineTiming('PM')" id="timing-filter-PM" class="timing-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">PM</button>
+                        <button onclick="filterRoutineTiming('anytime')" id="timing-filter-anytime" class="timing-filter-btn px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all shrink-0 bg-slate-800 text-slate-400 hover:text-slate-200">Anytime</button>
+                    </div>
+                </div>
+
+                <div id="routine-items-container" class="grid grid-cols-1 gap-2.5"></div>
+            </section>
+
+            <section id="tab-health" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Health</h2>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fa-solid fa-glass-water text-cyan-400 mr-2"></i> Hydration Tracker
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="quickLog('water')" class="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl shadow hover:bg-cyan-400 transition-all text-sm flex items-center space-x-1.5">
+                                <span>💧</span>
+                                <span>+ 1 Glass</span>
+                            </button>
+                            <span id="health-water-display" class="text-sm font-bold text-cyan-300">0 logged today</span>
+                        </div>
+                        <div id="water-log-list" class="space-y-2 max-h-48 overflow-y-auto pt-2 border-t border-slate-800"></div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fa-solid fa-poop text-amber-500 mr-2"></i> Digestion Tracker
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="quickLog('poop')" class="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl shadow hover:bg-amber-400 transition-all text-sm flex items-center space-x-1.5">
+                                <span>💩</span>
+                                <span>Log Poop</span>
+                            </button>
+                            <span id="health-poop-display" class="text-sm font-bold text-amber-300">0 logged today</span>
+                        </div>
+                        <div id="poop-log-list" class="space-y-2 max-h-48 overflow-y-auto pt-2 border-t border-slate-800"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-vault" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Bank & Rewards</h2>
+                    </div>
+                </header>
+
+                <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="space-y-0.5 text-center sm:text-left">
+                        <span class="text-[11px] uppercase tracking-wider text-emerald-400 font-bold block">Bank Balance</span>
+                        <div id="vault-tab-balance" class="text-3xl font-black text-emerald-400 tracking-tight">$0.00</div>
+                    </div>
+                    <button onclick="toggleCashOutModal(true)" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all flex items-center space-x-1.5 shrink-0">
+                        <i class="fa-solid fa-money-bill-transfer text-xs"></i>
+                        <span>Cash Out Funds</span>
+                    </button>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4">
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-400 mr-2"></i> Cash Out History
+                    </h3>
+                    <div id="vault-cashout-history" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+                </div>
+            </section>
+
+            <section id="tab-history" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Completion History</h2>
+                    </div>
+                </header>
+
+                <div id="history-list-container" class="space-y-3"></div>
+            </section>
+
+            <section id="tab-analytics" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Analytics</h2>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center">
+                            <i class="fa-solid fa-chart-simple text-emerald-400 mr-2"></i> 7-Day Task Completion Trend
+                        </h3>
+                        <div class="h-64 relative">
+                            <canvas id="chart-completions"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center">
+                            <i class="fa-solid fa-calendar-days text-sky-400 mr-2"></i> <span id="monthly-chart-title">Current Month Task Completion</span>
+                        </h3>
+                        <div class="h-72 relative">
+                            <canvas id="chart-monthly"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center">
+                            <i class="fa-solid fa-poop text-amber-500 mr-2"></i> Digestion - Past 6 weeks
+                        </h3>
+                        <div class="h-64 relative">
+                            <canvas id="chart-poop-weekly"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-sync" class="tab-content p-3.5 sm:p-6 space-y-4 sm:space-y-6 hidden">
+                <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Google Sync & Backup</h2>
+                    </div>
+                </header>
+
+                <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4 max-w-2xl">
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-cloud-arrow-up text-emerald-400 mr-2"></i> Webhook Sync URL
+                    </h3>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-slate-400">Google Apps Script Webhook URL</label>
+                        <input type="url" id="sync-url-input" placeholder="https://script.google.com/macros/s/..." class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="saveSyncUrl()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition-all">
+                        Save Webhook URL
+                    </button>
+
+                    <div class="mt-4 pt-4 border-t border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center">
+                            <i class="fa-solid fa-circle-info mr-1.5"></i> Webhook Setup Instructions
+                        </h4>
+                        <ol class="list-decimal list-inside text-xs text-slate-300 space-y-2 leading-relaxed">
+                            <li>Open <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline">Google Sheets</a> and create a new spreadsheet.</li>
+                            <li>Click on <strong>Extensions &gt; Apps Script</strong> in the top menu.</li>
+                            <li>Delete any existing code and paste the script below into the code editor.</li>
+                            <li>In the top right corner of Apps Script, click <strong>Deploy &gt; New deployment</strong>.</li>
+                            <li>Click the gear icon next to <em>Select type</em> and select <strong>Web app</strong>.</li>
+                            <li>Set <em>"Execute as"</em> to <strong>Me</strong> and <em>"Who has access"</em> to <strong>Anyone</strong>.</li>
+                            <li>Click <strong>Deploy</strong>, authorize permissions, and copy the generated <strong>Web App URL</strong>.</li>
+                            <li>Paste the URL into the input field above and click <strong>Save Webhook URL</strong>.</li>
+                        </ol>
+
+                        <div class="mt-3 p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-slate-400 font-mono">Google Apps Script (Code.gs)</span>
+                                <button onclick="copyAppsScriptCode()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-[10px] font-bold rounded-lg transition-all flex items-center space-x-1">
+                                    <i class="fa-solid fa-copy"></i>
+                                    <span>Copy Script</span>
+                                </button>
+                            </div>
+                            <pre id="apps-script-code-block" class="text-[11px] font-mono text-emerald-300/90 overflow-x-auto p-2 bg-[#090d16] rounded-lg border border-slate-800/80 leading-relaxed max-h-48"><code>function doPost(e) {
+  try {
+    var contents = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (contents.history && Array.isArray(contents.history)) {
+      var sheet = ss.getSheetByName('History') || ss.insertSheet('History');
+      sheet.clear();
+      sheet.appendRow(['ID', 'Title', 'Category', 'Reward ($)', 'Timestamp']);
+      contents.history.forEach(function(item) {
+        sheet.appendRow([item.id, item.title, item.category, item.reward, item.timestamp]);
+      });
+    }
+
+    if (contents.healthLogs && contents.healthLogs.water) {
+      var wSheet = ss.getSheetByName('Health_Water') || ss.insertSheet('Health_Water');
+      wSheet.clear();
+      wSheet.appendRow(['ID', 'Amount (Glasses)', 'Timestamp']);
+      contents.healthLogs.water.forEach(function(w) {
+        wSheet.appendRow([w.id, w.amount || 1, w.timestamp]);
+      });
+    }
+
+    if (contents.healthLogs && contents.healthLogs.poop) {
+      var pSheet = ss.getSheetByName('Health_Poop') || ss.insertSheet('Health_Poop');
+      pSheet.clear();
+      pSheet.appendRow(['ID', 'Timestamp']);
+      contents.healthLogs.poop.forEach(function(p) {
+        pSheet.appendRow([p.id, p.timestamp]);
+      });
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-[#111827] border border-slate-800 space-y-4 max-w-2xl">
+                    <h3 class="text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-database text-teal-400 mr-2"></i> Data Backup & Restore
+                    </h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="exportBackupData()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition-all flex items-center space-x-1.5">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Export JSON Backup</span>
+                        </button>
+                        <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition-all flex items-center space-x-1.5 cursor-pointer">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Import JSON Backup</span>
+                            <input type="file" accept=".json" onchange="importBackupFile(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div id="new-task-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-[#111827] border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <h3 id="task-modal-title" class="text-lg font-bold text-white">Add New Task</h3>
+                <button onclick="toggleNewTaskModal(false)" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="add-task-form" onsubmit="handleSaveTask(event)" class="space-y-4">
+                <input type="hidden" id="editing-task-id" value="">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Task Title</label>
+                    <input type="text" id="task-title-input" required placeholder="e.g. Read 15 pages" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Category</label>
+                        <select id="task-category-input" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="todo">To do</option>
+                            <option value="chores">Chore</option>
+                            <option value="workouts">Exercise</option>
+                            <option value="skincare">Hygiene</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Frequency</label>
+                        <select id="task-frequency-input" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="daily">Daily</option>
+                            <option value="once">Once</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Timing</label>
+                        <select id="task-timing-input" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <option value="anytime">🕒 Anytime</option>
+                            <option value="AM">☀️ AM</option>
+                            <option value="PM">🌙 PM</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Reward ($)</label>
+                        <input type="number" id="task-reward-input" step="0.25" min="0" value="0.50" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold text-slate-400">Sub-tasks (Optional)</label>
+                        <button type="button" onclick="addSubtaskInputRow()" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center space-x-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>Add Sub-task</span>
+                        </button>
+                    </div>
+                    <div id="subtask-inputs-container" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
+                </div>
+
+                <div class="pt-3 flex justify-between items-center border-t border-slate-800">
+                    <button type="button" id="task-modal-delete-btn" onclick="handleDeleteFromModal()" class="hidden px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold rounded-xl text-xs transition-all flex items-center space-x-1.5">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Delete Task</span>
+                    </button>
+                    <div class="flex space-x-3 ml-auto">
+                        <button type="button" onclick="toggleNewTaskModal(false)" class="px-4 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-700">Cancel</button>
+                        <button type="submit" id="task-modal-submit-btn" class="px-4 py-2 bg-emerald-500 text-slate-950 font-bold rounded-xl text-sm hover:bg-emerald-400">Save Task</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Central Application State
+        let appState = {
+            vaultBalance: 0.00,
+            tasks: [],
+            history: [],
+            healthLogs: {
+                poop: [],
+                water: []
+            },
+            syncUrl: ''
+        };
+
+        let currentCategoryFilter = 'all';
+        let currentFrequencyFilter = 'all';
+        let currentTimingFilter = 'all';
+
+        let completionChartInstance = null;
+        let monthlyChartInstance = null;
+        let poopChartInstance = null;
+
+        // --- Utility Helpers ---
+        function isSameDay(d1, d2) {
+            if (!d1 || !d2) return false;
+            const date1 = new Date(d1);
+            const date2 = new Date(d2);
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
+        function isSameMonth(d1, d2) {
+            if (!d1 || !d2) return false;
+            const date1 = new Date(d1);
+            const date2 = new Date(d2);
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth();
+        }
+
+        function getGlasses(w) {
+            if (!w) return 1;
+            if (w.amount && w.amount >= 50) return Math.round(w.amount / 250) || 1;
+            return w.amount || 1;
+        }
+
+        function loadStorage() {
+            const saved = localStorage.getItem('sarahs_tracker_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appState = Object.assign(appState, parsed);
+                } catch(e) {
+                    console.error("Error loading state", e);
+                }
+            }
+            const syncInput = document.getElementById('sync-url-input');
+            if (syncInput && appState.syncUrl) {
+                syncInput.value = appState.syncUrl;
+            }
+        }
+
+        function saveStorage() {
+            localStorage.setItem('sarahs_tracker_data', JSON.stringify(appState));
+            // Trigger automatic background webhook sync if configured
+            triggerWebhookSync();
+        }
+
+        function triggerWebhookSync() {
+            if (!appState.syncUrl) return;
+            fetch(appState.syncUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    history: appState.history,
+                    healthLogs: appState.healthLogs
+                })
+            }).catch(err => console.error('Webhook sync failed:', err));
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'bg-emerald-500 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-sm shadow-xl transition-all duration-300 transform translate-y-2 opacity-0';
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function formatCategory(cat) {
+            const map = { todo: 'To do', chores: 'Chore', workouts: 'Exercise', skincare: 'Hygiene', cashout: 'Cash Out' };
+            return map[cat] || cat;
+        }
+
+        function formatTiming(timing) {
+            const map = { AM: '☀️ AM', PM: '🌙 PM', anytime: '🕒 Anytime' };
+            return map[timing] || timing;
+        }
+
+        function formatTimingIcon(timing) {
+            const map = { AM: '☀️', PM: '🌙', anytime: '🕒' };
+            return map[timing] || '🕒';
+        }
+
+        // --- Navigation ---
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-emerald-500/10', 'text-emerald-400', 'font-bold');
+                el.classList.add('text-slate-400');
+            });
+            document.querySelectorAll('.mob-nav-btn').forEach(el => {
+                el.classList.remove('text-emerald-400', 'bg-emerald-500/15', 'font-bold');
+                el.classList.add('text-slate-400');
+            });
+
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if (activeTab) activeTab.classList.remove('hidden');
+
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-emerald-500/10', 'text-emerald-400', 'font-bold');
+                activeNav.classList.remove('text-slate-400');
+            }
+
+            const activeMobNav = document.getElementById(`mob-nav-${tabId}`);
+            if (activeMobNav) {
+                activeMobNav.classList.add('text-emerald-400', 'bg-emerald-500/15', 'font-bold');
+                activeMobNav.classList.remove('text-slate-400');
+            }
+
+            if (tabId === 'analytics') {
+                window.renderAnalytics();
+            }
+        };
+
+        // --- Task Filters ---
+        window.filterRoutineCategory = function(cat) {
+            currentCategoryFilter = cat;
+            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                btn.className = 'cat-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-slate-800 text-slate-400 hover:text-slate-200';
+            });
+            const activeBtn = document.getElementById(`cat-filter-${cat}`);
+            if (activeBtn) activeBtn.className = 'cat-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-emerald-500 text-slate-950';
+            window.renderRoutines();
+        };
+
+        window.filterRoutineFrequency = function(freq) {
+            currentFrequencyFilter = freq;
+            document.querySelectorAll('.freq-filter-btn').forEach(btn => {
+                btn.className = 'freq-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-slate-800 text-slate-400 hover:text-slate-200';
+            });
+            const activeBtn = document.getElementById(`freq-filter-${freq}`);
+            if (activeBtn) activeBtn.className = 'freq-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-teal-500 text-slate-950';
+            window.renderRoutines();
+        };
+
+        window.filterRoutineTiming = function(timing) {
+            currentTimingFilter = timing;
+            document.querySelectorAll('.timing-filter-btn').forEach(btn => {
+                btn.className = 'timing-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-slate-800 text-slate-400 hover:text-slate-200';
+            });
+            const activeBtn = document.getElementById(`timing-filter-${timing}`);
+            if (activeBtn) activeBtn.className = 'timing-filter-btn px-2.5 py-0.5 rounded-md text-xs font-semibold transition-all bg-sky-500 text-slate-950';
+            window.renderRoutines();
+        };
+
+        // --- Task Modal & CRUD ---
+        window.toggleNewTaskModal = function(show) {
+            const modal = document.getElementById('new-task-modal');
+            if (modal) modal.classList.toggle('hidden', !show);
+        };
+
+        window.addSubtaskInputRow = function(val = '') {
+            const container = document.getElementById('subtask-inputs-container');
+            if (!container) return;
+            const rowId = 'sub-row-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+            const div = document.createElement('div');
+            div.id = rowId;
+            div.className = 'flex items-center space-x-2';
+            div.innerHTML = `
+                <input type="text" value="${val.replace(/"/g, '&quot;')}" placeholder="Sub-task name..." class="subtask-title-input flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
+                <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-slate-500 hover:text-red-400 text-xs p-1">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        };
+
+        window.openAddTaskModal = function() {
+            document.getElementById('task-modal-title').innerText = 'Add New Task';
+            document.getElementById('task-modal-submit-btn').innerText = 'Save Task';
+            document.getElementById('editing-task-id').value = '';
+            document.getElementById('add-task-form').reset();
+            document.getElementById('subtask-inputs-container').innerHTML = '';
+            const deleteBtn = document.getElementById('task-modal-delete-btn');
+            if (deleteBtn) deleteBtn.classList.add('hidden');
+            window.toggleNewTaskModal(true);
+        };
+
+        window.openEditTaskModal = function(taskId) {
+            const task = appState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('task-modal-title').innerText = 'Edit Task';
+            document.getElementById('task-modal-submit-btn').innerText = 'Update Task';
+            document.getElementById('editing-task-id').value = task.id;
+            document.getElementById('task-title-input').value = task.title;
+            document.getElementById('task-category-input').value = task.category;
+            document.getElementById('task-frequency-input').value = task.frequency;
+            document.getElementById('task-timing-input').value = task.timing;
+            document.getElementById('task-reward-input').value = task.reward;
+
+            const deleteBtn = document.getElementById('task-modal-delete-btn');
+            if (deleteBtn) deleteBtn.classList.remove('hidden');
+
+            const container = document.getElementById('subtask-inputs-container');
+            container.innerHTML = '';
+            if (task.subtasks && task.subtasks.length > 0) {
+                task.subtasks.forEach(st => addSubtaskInputRow(st.title, st.completed));
+            }
+
+            window.toggleNewTaskModal(true);
+        };
+
+        window.handleDeleteFromModal = function() {
+            const editingId = document.getElementById('editing-task-id').value;
+            if (editingId) {
+                window.deleteTask(editingId);
+                window.toggleNewTaskModal(false);
+            }
+        };
+
+        window.handleCashOut = function(e) {
+            e.preventDefault();
+            const amountInput = document.getElementById('cash-out-amount-input');
+            const noteInput = document.getElementById('cash-out-note-input');
+            const amount = parseFloat(amountInput.value) || 0;
+            const note = noteInput.value.trim() || 'Cash Out';
+
+            if (amount <= 0 || amount > appState.vaultBalance) {
+                showToast(amount <= 0 ? 'Please enter a valid amount.' : 'Insufficient Bank balance!');
+                return;
+            }
+
+            appState.vaultBalance -= amount;
+            appState.history.unshift({
+                id: Date.now().toString(),
+                taskId: null,
+                title: note,
+                category: 'cashout',
+                reward: -amount,
+                timestamp: new Date().toISOString()
+            });
+
+            saveStorage();
+            window.renderAll();
+            window.toggleCashOutModal(false);
+            amountInput.value = '';
+            noteInput.value = '';
+            showToast(`Cashed out $${amount.toFixed(2)} successfully!`);
+        };
+
+        window.deleteHistoryItem = function(historyId) {
+            const idx = appState.history.findIndex(h => h.id === historyId);
+            if (idx !== -1) {
+                const item = appState.history[idx];
+                if (item.category === 'cashout' || item.reward < 0) {
+                    appState.vaultBalance += Math.abs(item.reward);
+                    showToast(`Cash out refunded +$${Math.abs(item.reward).toFixed(2)} to Bank!`);
+                }
+                appState.history.splice(idx, 1);
+                saveStorage();
+                window.renderAll();
+            }
+        };
+
+        window.saveSyncUrl = function() {
+            appState.syncUrl = document.getElementById('sync-url-input').value.trim();
+            saveStorage();
+            showToast('Webhook URL saved!');
+        };
+
+        window.copyAppsScriptCode = function() {
+            const codeEl = document.getElementById('apps-script-code-block');
+            if (!codeEl) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeEl.innerText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Apps Script code copied!');
+            } catch (err) {
+                showToast('Failed to copy. Please copy manually.');
+            }
+            document.body.removeChild(textarea);
+        };
+
+        window.exportBackupData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", `sarahs_tracker_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dl);
+            dl.click();
+            dl.remove();
+            showToast('Backup downloaded successfully!');
+        };
+
+        window.importBackupFile = function(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && typeof imported === 'object') {
+                        appState = Object.assign(appState, imported);
+                        saveStorage();
+                        window.renderAll();
+                        showToast('Backup restored successfully!');
+                    }
+                } catch (err) {
+                    showToast('Invalid backup JSON file.');
+                }
+            };
+            if (event.target.files && event.target.files[0]) {
+                reader.readAsText(event.target.files[0]);
+            }
+        };
+
+        // --- Render Functions ---
+        window.renderDashboard = function() {
+            const container = document.getElementById('dash-active-tasks');
+            if (!container) return;
+            const now = new Date();
+            const active = appState.tasks.slice(0, 5);
+
+            if (active.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 py-2">No priority tasks added yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = active.map(t => {
+                const isDone = t.completed || isSameDay(t.lastCompleted, now);
+                return `
+                    <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleTaskCompletion('${t.id}')" class="w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-700 hover:border-emerald-500'}">
+                                ${isDone ? '<i class="fa-solid fa-check text-[10px] font-bold"></i>' : ''}
+                            </button>
+                            <span class="text-xs font-semibold ${isDone ? 'line-through text-slate-500' : 'text-slate-200'}">${t.title}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium">${formatTiming(t.timing)}</span>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.renderRoutines = function() {
+            const container = document.getElementById('routine-items-container');
+            if (!container) return;
+
+            const now = new Date();
+            const filtered = appState.tasks.filter(t => {
+                if (currentCategoryFilter !== 'all' && t.category !== currentCategoryFilter) return false;
+                if (currentFrequencyFilter !== 'all' && t.frequency !== currentFrequencyFilter) return false;
+                if (currentTimingFilter !== 'all' && t.timing !== currentTimingFilter) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs rounded-2xl bg-[#111827] border border-slate-800">No tasks found for the selected filters.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => {
+                const isDone = t.completed || isSameDay(t.lastCompleted, now);
+                const monthlyCount = appState.history.filter(h => h.taskId === t.id && isSameMonth(h.timestamp, now)).length;
+                const counterBadge = t.frequency !== 'once' 
+                    ? `<span class="text-[9px] sm:text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"><i class="fa-solid fa-repeat text-emerald-400 mr-1"></i>${monthlyCount}x</span>` 
+                    : '';
+
+                const subtasks = t.subtasks || [];
+                const subtasksHtml = subtasks.length > 0 ? `
+                    <div class="mt-2 pt-2 border-t border-slate-800/80 space-y-1 pl-7 sm:pl-8">
+                        ${subtasks.map(st => {
+                            const isSubDone = st.completed || (isDone && st.completed !== false);
+                            return `
+                                <div onclick="toggleSubtaskCompletion('${t.id}', '${st.id}', event)" class="flex items-center space-x-2 cursor-pointer text-[11px] sm:text-xs group">
+                                    <div class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border transition-all flex items-center justify-center shrink-0 ${isSubDone ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-700 group-hover:border-emerald-500/60'}">
+                                        ${isSubDone ? '<i class="fa-solid fa-check text-[8px] sm:text-[10px] font-bold"></i>' : ''}
+                                    </div>
+                                    <span class="${isSubDone ? 'line-through text-slate-500' : 'text-slate-300 group-hover:text-slate-100'}">${st.title}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#111827] border ${isDone ? 'border-slate-800 opacity-75' : 'border-slate-800 hover:border-slate-700'} transition-all">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0 flex-1">
+                                <button onclick="toggleTaskCompletion('${t.id}')" class="w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg border flex items-center justify-center transition-all shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-700 hover:border-emerald-500'}">
+                                    ${isDone ? '<i class="fa-solid fa-check text-[10px] sm:text-xs font-bold"></i>' : ''}
+                                </button>
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="text-xs sm:text-sm font-bold truncate ${isDone ? 'line-through text-slate-500' : 'text-slate-100'}">${t.title}</h4>
+                                    <div class="flex items-center space-x-1.5 mt-0.5 flex-wrap gap-y-1">
+                                        <span class="text-[9px] sm:text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded-md font-semibold shrink-0">${formatCategory(t.category)}</span>
+                                        <span class="text-[10px] sm:text-[11px] text-slate-400 font-normal shrink-0" title="${formatTiming(t.timing)}">${formatTimingIcon(t.timing)}</span>
+                                        <span class="text-[9px] sm:text-[10px] text-slate-500 whitespace-nowrap">• ${t.frequency}</span>
+                                        ${counterBadge}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                <span class="text-xs sm:text-sm font-extrabold text-emerald-400">+$${t.reward.toFixed(2)}</span>
+                                <button onclick="openEditTaskModal('${t.id}')" title="Edit Task" class="text-slate-500 hover:text-emerald-400 transition-all text-xs p-0.5">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${subtasksHtml}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.renderHealth = function() {
+            const today = new Date();
+            const waterToday = appState.healthLogs.water
+                .filter(w => isSameDay(w.timestamp, today))
+                .reduce((sum, w) => sum + getGlasses(w), 0);
+            
+            const waterDisp = document.getElementById('health-water-display');
+            if (waterDisp) waterDisp.innerText = `${waterToday} logged today`;
+
+            const waterList = document.getElementById('water-log-list');
+            if (waterList) {
+                waterList.innerHTML = appState.healthLogs.water.slice(0, 10).map(w => {
+                    const count = getGlasses(w);
+                    return `
+                    <div class="text-xs py-1 px-2.5 bg-slate-900 rounded-lg flex items-center justify-between text-slate-300">
+                        <span>💧 +${count} ${count === 1 ? 'glass' : 'glasses'}</span>
+                        <span class="text-[10px] text-slate-500">${new Date(w.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                `;
+                }).join('') || '<p class="text-xs text-slate-500 py-1">No water logs recorded.</p>';
+            }
+
+            const poopToday = appState.healthLogs.poop.filter(p => isSameDay(p.timestamp, today)).length;
+            const poopDisp = document.getElementById('health-poop-display');
+            if (poopDisp) poopDisp.innerText = `${poopToday} logged today`;
+
+            const poopList = document.getElementById('poop-log-list');
+            if (poopList) {
+                poopList.innerHTML = appState.healthLogs.poop.slice(0, 10).map(p => `
+                    <div class="text-xs py-1 px-2.5 bg-slate-900 rounded-lg flex items-center justify-between text-slate-300">
+                        <span>💩 Digestion Event</span>
+                        <span class="text-[10px] text-slate-500">${new Date(p.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                `).join('') || '<p class="text-xs text-slate-500 py-1">No digestion logs recorded.</p>';
+            }
+        };
+
+        window.renderBank = function() {
+            const sideBal = document.getElementById('sidebar-vault-balance');
+            if (sideBal) sideBal.innerText = `$${appState.vaultBalance.toFixed(2)}`;
+
+            const tabBal = document.getElementById('vault-tab-balance');
+            if (tabBal) tabBal.innerText = `$${appState.vaultBalance.toFixed(2)}`;
+
+            const availBal = document.getElementById('cash-out-available-balance');
+            if (availBal) availBal.innerText = `$${appState.vaultBalance.toFixed(2)}`;
+
+            const cashoutHistContainer = document.getElementById('vault-cashout-history');
+            if (cashoutHistContainer) {
+                const cashouts = appState.history.filter(h => h.category === 'cashout' || h.reward < 0);
+                if (cashouts.length === 0) {
+                    cashoutHistContainer.innerHTML = `<div class="p-4 text-center text-slate-500 text-xs rounded-xl bg-slate-900">No cash out records found.</div>`;
+                } else {
+                    cashoutHistContainer.innerHTML = cashouts.map(item => `
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs font-bold text-slate-200">${item.title || 'Cash Out'}</div>
+                                <div class="text-[10px] text-slate-500">${new Date(item.timestamp).toLocaleString()}</div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-bold text-amber-400">-$${Math.abs(item.reward).toFixed(2)}</span>
+                                <button onclick="deleteHistoryItem('${item.id}')" title="Refund / Delete Cash Out" class="text-slate-500 hover:text-red-400 transition-all text-xs p-1">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        };
+
+        window.renderHistory = function() {
+            const container = document.getElementById('history-list-container');
+            if (!container) return;
+
+            if (appState.history.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs rounded-2xl bg-[#111827] border border-slate-800">No task completion history yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = appState.history.map(item => {
+                const isCashOut = item.reward < 0;
+                const rewardDisplay = isCashOut 
+                    ? `<span class="text-xs font-bold text-amber-400">-$${Math.abs(item.reward).toFixed(2)}</span>`
+                    : `<span class="text-xs font-bold text-emerald-400">+$${(item.reward || 0).toFixed(2)}</span>`;
+
+                return `
+                    <div class="p-4 rounded-2xl bg-[#111827] border border-slate-800 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-bold text-slate-100">${item.title}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500">${new Date(item.timestamp).toLocaleString()}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            ${rewardDisplay}
+                            <button onclick="deleteHistoryItem('${item.id}')" class="text-slate-500 hover:text-red-400 transition-all text-xs p-1">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.renderAnalytics = function() {
+            // 7-Day Trend
+            const last7Days = [];
+            const completionData = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                last7Days.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                completionData.push(appState.history.filter(h => isSameDay(h.timestamp, d) && h.reward >= 0).length);
+            }
+
+            const ctxComp = document.getElementById('chart-completions');
+            if (ctxComp) {
+                if (completionChartInstance) completionChartInstance.destroy();
+                completionChartInstance = new Chart(ctxComp, {
+                    type: 'bar',
+                    data: {
+                        labels: last7Days,
+                        datasets: [{ label: 'Tasks Completed', data: completionData, backgroundColor: '#10b981', borderRadius: 6 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#1f2937' }, beginAtZero: true }
+                        },
+                        plugins: { legend: { labels: { color: '#94a3b8' } } }
+                    }
+                });
+            }
+
+            // Monthly Breakdown
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+            const monthName = now.toLocaleString('default', { month: 'long' });
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            const monthTitleEl = document.getElementById('monthly-chart-title');
+            if (monthTitleEl) monthTitleEl.innerText = `${monthName} Task Completion`;
+
+            const daysLabels = [];
+            const todoData = [], choresData = [], workoutsData = [], skincareData = [];
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                daysLabels.push(`${day}`);
+                const dateForDay = new Date(currentYear, currentMonth, day);
+                let todo = 0, chores = 0, workouts = 0, skincare = 0;
+                
+                appState.history.forEach(h => {
+                    if (h.reward >= 0 && isSameDay(h.timestamp, dateForDay)) {
+                        if (h.category === 'todo') todo++;
+                        else if (h.category === 'chores') chores++;
+                        else if (h.category === 'workouts') workouts++;
+                        else if (h.category === 'skincare') skincare++;
+                    }
+                });
+                todoData.push(todo);
+                choresData.push(chores);
+                workoutsData.push(workouts);
+                skincareData.push(skincare);
+            }
+
+            const ctxMonthly = document.getElementById('chart-monthly');
+            if (ctxMonthly) {
+                if (monthlyChartInstance) monthlyChartInstance.destroy();
+                monthlyChartInstance = new Chart(ctxMonthly, {
+                    type: 'bar',
+                    data: {
+                        labels: daysLabels,
+                        datasets: [
+                            { label: 'To do', data: todoData, backgroundColor: '#3b82f6' },
+                            { label: 'Chore', data: choresData, backgroundColor: '#10b981' },
+                            { label: 'Exercise', data: workoutsData, backgroundColor: '#f59e0b' },
+                            { label: 'Hygiene', data: skincareData, backgroundColor: '#ec4899' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { stacked: true, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                            y: { stacked: true, ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#1f2937' }, beginAtZero: true }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8' }, position: 'bottom' },
+                            tooltip: { callbacks: { title: (items) => `${monthName} ${items[0].label}, ${currentYear}` } }
+                        }
+                    }
+                });
+            }
+
+            // 6-Week Poop Trend
+            const poopWeekLabels = [], poopWeekCounts = [];
+            for (let i = 5; i >= 0; i--) {
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - (i * 7 + 6));
+                weekStart.setHours(0, 0, 0, 0);
+
+                const weekEnd = new Date(now);
+                weekEnd.setDate(now.getDate() - (i * 7));
+                weekEnd.setHours(23, 59, 59, 999);
+
+                poopWeekLabels.push(`${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`);
+                
+                const count = (appState.healthLogs && appState.healthLogs.poop)
+                    ? appState.healthLogs.poop.filter(p => {
+                        const pDate = new Date(p.timestamp);
+                        return pDate >= weekStart && pDate <= weekEnd;
+                      }).length
+                    : 0;
+                poopWeekCounts.push(count);
+            }
+
+            const ctxPoop = document.getElementById('chart-poop-weekly');
+            if (ctxPoop) {
+                if (poopChartInstance) poopChartInstance.destroy();
+                poopChartInstance = new Chart(ctxPoop, {
+                    type: 'bar',
+                    data: {
+                        labels: poopWeekLabels,
+                        datasets: [{ label: 'Poop Count', data: poopWeekCounts, backgroundColor: '#f59e0b', borderRadius: 6 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                            y: { ticks: { color: '#94a3b8', precision: 0 }, grid: { color: '#1f2937' }, beginAtZero: true }
+                        },
+                        plugins: { legend: { labels: { color: '#94a3b8' } } }
+                    }
+                });
+            }
+        };
+
+        window.renderAll = function() {
+            if (typeof window.renderBank === 'function') window.renderBank();
+            if (typeof window.renderDashboard === 'function') window.renderDashboard();
+            if (typeof window.renderRoutines === 'function') window.renderRoutines();
+            if (typeof window.renderHealth === 'function') window.renderHealth();
+            if (typeof window.renderHistory === 'function') window.renderHistory();
+            if (typeof window.renderAnalytics === 'function') window.renderAnalytics();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStorage();
+            renderAll();
+        });
+    </script>
+</body>
+</html>
